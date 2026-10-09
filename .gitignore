@@ -1,0 +1,29 @@
+
+# Зависимости Node.js
+node_modules/
+
+# Локальная конфигурация Spotify
+spotify-config.json
+
+# Переменные окружения и секреты
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Локальные токены и данные авторизации
+.tokens/
+token.json
+tokens.json
+auth.json
+
+# Логи и временные файлы
+npm-debug.log*
+*.log
+.DS_Store
+Thumbs.db
+
+# Настройки редакторов
+.vscode/
+.idea/

@@ -1,0 +1,254 @@
+
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Spotify Widget</title>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            height: 100vh;
+            background: #121212;
+            color: white;
+            font-family: Arial, sans-serif;
+        }
+
+        .widget {
+            height: 100%;
+            padding: 18px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            background: linear-gradient(135deg, #252525, #111);
+            border: 1px solid #383838;
+            border-radius: 18px;
+        }
+
+        .cover {
+            width: 115px;
+            height: 115px;
+            flex-shrink: 0;
+            border-radius: 12px;
+            background: #1ed760;
+            object-fit: cover;
+        }
+
+        .info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .label {
+            color: #1ed760;
+            font-size: 10px;
+            font-weight: bold;
+            letter-spacing: 2px;
+            margin-bottom: 9px;
+        }
+
+        .title {
+            font-size: 17px;
+            font-weight: bold;
+            overflow: hidden;
+            white-space: nowrap;
+            text-overflow: ellipsis;
+        }
+
+        .artist {
+            margin-top: 6px;
+            color: #aaa;
+            font-size: 12px;
+            overflow: hidden;
+            white-space: nowrap;
+            text-overflow: ellipsis;
+        }
+
+        .controls {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-top: 17px;
+        }
+
+        button {
+            border: none;
+            background: none;
+            color: white;
+            font-size: 21px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            color: #1ed760;
+        }
+
+        .play {
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            background: #1ed760;
+            color: black;
+            font-size: 16px;
+        }
+
+        .play:hover {
+            color: black;
+            background: #45ed80;
+        }
+
+        .connect {
+            margin-top: 12px;
+            padding: 7px 10px;
+            border-radius: 15px;
+            background: #1ed760;
+            color: black;
+            font-size: 11px;
+            font-weight: bold;
+        }
+
+        .status {
+            margin-top: 9px;
+            color: #999;
+            font-size: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="widget">
+        <img id="cover" class="cover"
+             src="https://placehold.co/230x230/1ed760/121212?text=Spotify"
+             alt="Обложка трека">
+
+        <div class="info">
+            <div class="label">NOW PLAYING</div>
+            <div id="title" class="title">Spotify Widget</div>
+            <div id="artist" class="artist">Подключи свой аккаунт</div>
+
+            <div class="controls">
+                <button id="previous" title="Предыдущий трек">⏮</button>
+                <button id="play" class="play" title="Пауза или воспроизведение">▶</button>
+                <button id="next" title="Следующий трек">⏭</button>
+            </div>
+
+            <button id="connect" class="connect">Подключить Spotify</button>
+            <div id="status" class="status">Не подключено</div>
+        </div>
+    </div>
+
+    <script>
+        const cover = document.getElementById('cover');
+        const title = document.getElementById('title');
+        const artist = document.getElementById('artist');
+        const playButton = document.getElementById('play');
+        const connectButton = document.getElementById('connect');
+        const statusText = document.getElementById('status');
+
+        let isPlaying = false;
+        let connected = false;
+
+        async function updateTrack() {
+            if (!connected) return;
+
+            try {
+                const track = await window.spotify.getCurrentTrack();
+
+                if (!track) {
+                    title.textContent = 'Ничего не играет';
+                    artist.textContent = 'Запусти музыку в Spotify';
+                    return;
+                }
+
+                title.textContent = track.title;
+                artist.textContent = track.artist;
+                isPlaying = track.isPlaying;
+                playButton.textContent = isPlaying ? 'Ⅱ' : '▶';
+
+                if (track.cover) {
+                    cover.src = track.cover;
+                }
+
+                statusText.textContent = 'Spotify подключён';
+            } catch (error) {
+                statusText.textContent = 'Ошибка получения трека';
+                console.error(error);
+            }
+        }
+
+        connectButton.addEventListener('click', async () => {
+            connectButton.disabled = true;
+            statusText.textContent = 'Ожидаем авторизацию...';
+
+            try {
+                await window.spotify.connect();
+                connected = true;
+                connectButton.style.display = 'none';
+                statusText.textContent = 'Spotify подключён';
+                await updateTrack();
+            } catch (error) {
+                statusText.textContent = error.message || 'Не удалось подключиться';
+                console.error(error);
+            } finally {
+                connectButton.disabled = false;
+            }
+        });
+
+        playButton.addEventListener('click', async () => {
+            if (!connected) {
+                statusText.textContent = 'Сначала подключи Spotify';
+                return;
+            }
+
+            try {
+                await window.spotify.control(isPlaying ? 'pause' : 'play');
+                await updateTrack();
+            } catch (error) {
+                statusText.textContent = 'Не удалось управлять музыкой';
+                console.error(error);
+            }
+        });
+
+        document.getElementById('next').addEventListener('click', async () => {
+            if (!connected) {
+                statusText.textContent = 'Сначала подключи Spotify';
+                return;
+            }
+
+            try {
+                await window.spotify.control('next');
+                await updateTrack();
+                setTimeout(updateTrack, 500);
+                setTimeout(updateTrack, 1200);
+            } catch (error) {
+                statusText.textContent = 'Не удалось переключить трек';
+                console.error(error);
+            }
+        });
+
+        document.getElementById('previous').addEventListener('click', async () => {
+            if (!connected) {
+                statusText.textContent = 'Сначала подключи Spotify';
+                return;
+            }
+
+            try {
+                //await window.spotify.control('previous');
+               // setTimeout(updateTrack, 800);
+                await window.spotify.control('previous');
+                await updateTrack();
+                setTimeout(updateTrack, 500);
+                setTimeout(updateTrack, 1200);
+            } catch (error) {
+                statusText.textContent = 'Не удалось переключить трек';
+                console.error(error);
+            }
+        });
+
+        setInterval(updateTrack, 5000);
+    </script>
+</body>
+</html>

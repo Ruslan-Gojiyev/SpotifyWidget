@@ -1,0 +1,13 @@
+
+{
+  "name": "spotify-widget",
+  "version": "1.0.0",
+  "description": "My Spotify desktop widget",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron ."
+  },
+  "devDependencies": {
+    "electron": "*"
+  }
+}
